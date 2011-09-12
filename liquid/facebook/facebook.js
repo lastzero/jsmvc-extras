@@ -1,4 +1,19 @@
-$.Class.extend('Liquid.Facebook', {
+/**
+ * Liquid.Facebook is a utilty class that wraps Facebook Connect
+ *
+ * It requires the use of Liquid_Service_Facebook on the server side (plus Liquid.Ajax for JSON-RPC):
+ * https://github.com/smashedpumpkin/liquidlibrary/blob/master/Liquid/Service/Facebook.php 
+ * 
+ * @class      Liquid.Facebook
+ * @author     Michael Mayer
+ * @copyright  Copyright (c) 2010 Michael Mayer (http://www.liquidbytes.net/)
+ * @license    http://www.opensource.org/licenses/mit-license.php MIT License
+ * @license    http://www.opensource.org/licenses/gpl-2.0.php GPL v2
+ */
+ 
+$.Class.extend('Liquid.Facebook', 
+/* @Prototype */
+{
     _user: false,
     
     service: 'facebook',

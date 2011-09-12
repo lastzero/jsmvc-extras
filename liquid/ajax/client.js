@@ -1,14 +1,17 @@
 /**
- * LICENSE
+ * Ajax is a JSON-RPC client class, that optionally supports request aggregation
  *
- * This source file is subject to the new BSD license.
- * It is available through the world-wide-web at this URL:
- * http://www.liquidbytes.net/bsd.html
+ * There also is a JSON-RPC client and server available for PHP:
+ * https://github.com/smashedpumpkin/liquidlibrary/tree/master/Liquid/Ajax
  *
- * @category   Liquid
- * @package    Liquid_Ajax
- * @copyright  Copyright (c) 2010 Liquid Bytes Technologies (http://www.liquidbytes.net/)
- * @license    http://www.liquidbytes.net/bsd.html New BSD License
+ * This is a down-sized version of Liquid.Ajax that doesn't require JavaScriptMVC (just jQuery).
+ * It is not compatible with AJAX push.
+ *
+ * @class      Ajax
+ * @author     Michael Mayer
+ * @copyright  Copyright (c) 2010 Michael Mayer (http://www.liquidbytes.net/)
+ * @license    http://www.opensource.org/licenses/mit-license.php MIT License
+ * @license    http://www.opensource.org/licenses/gpl-2.0.php GPL v2
  */
 
 (function( $ ){

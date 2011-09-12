@@ -1,4 +1,17 @@
-$.Class.extend('Liquid.Wiki', {
+/**
+ * Liquid.Wiki is a client for the Liquid_Wiki service (PHP):
+ * https://github.com/smashedpumpkin/liquidlibrary/blob/master/Liquid/Service/Wiki.php 
+ * 
+ * @class      Liquid.Wiki
+ * @author     Michael Mayer
+ * @copyright  Copyright (c) 2010 Michael Mayer (http://www.liquidbytes.net/)
+ * @license    http://www.opensource.org/licenses/mit-license.php MIT License
+ * @license    http://www.opensource.org/licenses/gpl-2.0.php GPL v2
+ */
+ 
+$.Class.extend('Liquid.Wiki', 
+/* @Static */
+{
     wiki: {},  // TODO
     page: {},
     history: {},
@@ -348,4 +361,6 @@ $.Class.extend('Liquid.Wiki', {
             error: this.callback('onLoadError', error)
         });
     }
-},{});
+},
+/* @Prototype */
+{});

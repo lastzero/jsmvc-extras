@@ -1,24 +1,26 @@
 /**
- * LICENSE
+ * Liquid.Ajax is a JSON-RPC client, that optionally supports AJAX push and request aggregation
  *
- * This source file is subject to the new BSD license.
- * It is available through the world-wide-web at this URL:
- * http://www.liquidbytes.net/bsd.html
+ * There also is a JSON-RPC client and server available for PHP:
+ * https://github.com/smashedpumpkin/liquidlibrary/tree/master/Liquid/Ajax
  *
- * @category   Liquid
- * @package    Liquid_Ajax
- * @copyright  Copyright (c) 2010 Liquid Bytes Technologies (http://www.liquidbytes.net/)
- * @license    http://www.liquidbytes.net/bsd.html New BSD License
+ * @class      Liquid.Ajax
+ * @author     Michael Mayer
+ * @copyright  Copyright (c) 2010-2011 Michael Mayer (http://www.liquidbytes.net/)
+ * @license    http://www.opensource.org/licenses/mit-license.php MIT License
+ * @license    http://www.opensource.org/licenses/gpl-2.0.php GPL v2
  */
 
 $.Class.extend('Liquid.Ajax',
-{ /* Prototype */
+/* @Prototype */
+{
     rpcUrl: '/ajax', // Server base URL / controller name
     version: 1, // Protocol version that must match with the server
 
     debugMode: false, // Output debug messages
     developmentMode: false, // Verbose logs and no security checks
     useFixtures: false, // Use fixtures to simulate AJAX requests
+    useQueue: true, // Use request queue, if request failed/disconnected
 
     defaultSuccessEvent: '', // OpenAjax event string, in case no success callback is defined
     defaultErrorEvent: '', // OpenAjax event string, in case no error callback is defined
@@ -37,7 +39,7 @@ $.Class.extend('Liquid.Ajax',
     _events: {},
 
     init: function (options, events) { // Constructor
-        $.extend(this, options); // Use optional options arg to extend this object
+        $.extend(this, options || {}); // Use optional options arg to extend this object
         
         if(events && typeof events == 'object') {
             for(var i in events) {
@@ -45,8 +47,8 @@ $.Class.extend('Liquid.Ajax',
             }
         }
 
-        if(options.init) {
-            this.onInitSuccess(options.init);
+        if(this.initData) {
+            this.onInitSuccess(this.initData);
         } else {
             this.sendInitRequest();
         }
@@ -351,14 +353,17 @@ $.Class.extend('Liquid.Ajax',
     rpc: function(request) { // Sends a JSON-RPC (Remote procedure call) request to the server
         if(this.isDisconnected()) {
             this.log('RPC call not possible, while disconnected - it will be added to the retry queue');
-                
-            this._ajaxQueue.push(request);
-
+            
+            if(this.useQueue) {
+                this._ajaxQueue.push(request);
+            }
+            
             return;
         }
         
         var data;
         var url;
+        var deferred;
         var aggregate = false;
 
         this.log('Sending RPC request: ', request);
@@ -385,20 +390,28 @@ $.Class.extend('Liquid.Ajax',
             url = this.rpcUrl + '/' + request['service'];
         };
         
+        var fixture = false;
+        
+        if(this.useFixtures && (!aggregate || request.fixture)) {
+            fixture = request.fixture ? request.fixture : this.fixture;
+        }
+        
         var ajaxRequest = {
             type: 'POST',
             url: url + '?t=' + encodeURIComponent(this.secret),
             data: jQuery.toJSON(data),
             success: this.callback('onAjaxSuccess'),
-            error: this.callback('onAjaxError', request),
+            error: this.callback('onAjaxError', deferred, request),
             dataType: 'json',
             processData: false,
-            fixture: (this.useFixtures && !aggregate) ? this.fixture : false
+            fixture: fixture
         };
 
         var xhr = $.ajax(ajaxRequest);
         
         this.triggerEvent('rpc', [ajaxRequest, xhr]);
+        
+        return deferred;
     },
 
     onAjaxSuccess: function (data) { // Default AJAX success handler for rpc() (see above)
@@ -419,10 +432,12 @@ $.Class.extend('Liquid.Ajax',
         this.triggerEvent('onAjaxSuccess', arguments);
     },
 
-    onAjaxError: function (request, xhr, options) { // Default AJAX error handler for rpc() (see above)
+    onAjaxError: function (deferred, request, xhr, options) { // Default AJAX error handler for rpc() (see above)
         if(xhr.status == 401) {
             this.onDisconnected();
-            this._ajaxQueue.push(request);
+            if(this.useQueue) {
+                this._ajaxQueue.push(request);
+            }
             this.sendInitRequest();
         } else {
             this.log('WARNING: Got unexpected error from server: ', xhr);

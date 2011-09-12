@@ -1,20 +1,21 @@
-/** 
- * LICENSE
+/**
+ * Liquid.Ajax.Orbited adds support for the Orbited AJAX push server to Liquid.Ajax
  *
- * This source file is subject to the new BSD license.
- * It is available through the world-wide-web at this URL:
- * http://www.liquidbytes.net/bsd.html
+ * There also is a JSON-RPC client and server available for PHP:
+ * https://github.com/smashedpumpkin/liquidlibrary/tree/master/Liquid/Ajax
  *
- * @category   Liquid
- * @package    Liquid_Ajax
- * @copyright  Copyright (c) 2010 Liquid Bytes Technologies (http://www.liquidbytes.net/)
- * @license    http://www.liquidbytes.net/bsd.html New BSD License
+ * @class      Liquid.Ajax.Orbited
+ * @author     Michael Mayer
+ * @copyright  Copyright (c) 2010-2011 Michael Mayer (http://www.liquidbytes.net/)
+ * @license    http://www.opensource.org/licenses/mit-license.php MIT License
+ * @license    http://www.opensource.org/licenses/gpl-2.0.php GPL v2
  */
  
 steal('orbited','orbited/stomp').then(function () {
 
 Liquid.Ajax.extend('Liquid.Ajax.Orbited',
-{ /* Prototype */
+/* @Prototype */
+{
     stomp: null,
     orbitedConnected: false,
     subscriptions: {},
