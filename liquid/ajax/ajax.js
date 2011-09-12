@@ -41,6 +41,13 @@ $.Class.extend('Liquid.Ajax',
     _events: {},
 
     init: function (options, events) { // Constructor
+        this._ajaxCallbacks = {};
+        this._ajaxQueue = [];
+        this._ajaxDeferred = {};
+        this._events = {};
+        this.initData = false;
+        this.config = {};
+        
         $.extend(this, options || {}); // Use optional options arg to extend this object
         
         if(events && typeof events == 'object') {
@@ -312,10 +319,10 @@ $.Class.extend('Liquid.Ajax',
         return key;
     },
     
-    fixture: function(settings, callbackType) {
+    fixture: function(filename, settings, callbackType) {
         var request = jQuery.evalJSON(settings.data);
         
-        var params = jQuery.toJSON(request.params).replace(/[^a-zA-Z0-9]/g, '');
+        var params = request.params ? jQuery.toJSON(request.params).replace(/[^a-zA-Z0-9]/g, '') : null;
         
         if(params && params != 'null') {
             params = '/' + params;
@@ -327,7 +334,9 @@ $.Class.extend('Liquid.Ajax',
         
         var service = urlParts[2].split('?');
         
-        var filename = steal.root.path + '/fixtures/rpc/' + service[0] + '/' + request.method + params + '.json';
+        var filename = filename ? steal.root.path + filename : steal.root.path + '/fixtures/rpc/' + service[0] + '/' + request.method + params + '.json';
+        
+        console.log('fixture', filename);
         
         var ids = request.id.split(':');
         
@@ -360,10 +369,11 @@ $.Class.extend('Liquid.Ajax',
 
     rpc: function(request) { // Sends a JSON-RPC (Remote procedure call) request to the server
         if(this.isDisconnected()) {
-            this.log('RPC call not possible, while disconnected - it will be added to the retry queue');
-            
             if(this.useQueue) {
+                this.log('RPC call not possible, while disconnected - it will be added to the retry queue');
                 this._ajaxQueue.push(request);
+            } else {
+                this.log('RPC call not possible, while disconnected - request was discarded');
             }
             
             return;
@@ -400,8 +410,8 @@ $.Class.extend('Liquid.Ajax',
         
         var fixture = false;
         
-        if(this.useFixtures && (!aggregate || request.fixture)) {
-            fixture = request.fixture ? request.fixture : this.fixture;
+        if(this.useFixtures && !aggregate) {
+            fixture = this.callback('fixture', request.fixture);
         }
         
         var ajaxRequest = {
@@ -482,15 +492,23 @@ $.Class.extend('Liquid.Ajax',
         if(response.error) {
             var callbackId = parts[1];
             var data = response.error;
+            
             this.triggerEvent('onRpcError', [data]);
             this.deleteAjaxCallback(parts[0]);
-            deferred.resolve(data);
+            
+            if(deferred) {
+                deferred.reject(data);
+            }
         } else {
             var callbackId = parts[0];
             var data = response.result;
+            
             this.triggerEvent('onRpcSuccess', [data]);
             this.deleteAjaxCallback(parts[1]);
-            deferred.reject(data);
+            
+            if(deferred) {
+                deferred.resolve(data);
+            }
         }
         
         if(deferred) {
