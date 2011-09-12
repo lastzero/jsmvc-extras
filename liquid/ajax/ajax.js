@@ -21,6 +21,7 @@ $.Class.extend('Liquid.Ajax',
     developmentMode: false, // Verbose logs and no security checks
     useFixtures: false, // Use fixtures to simulate AJAX requests
     useQueue: true, // Use request queue, if request failed/disconnected
+    useDeferred: true, // Enable support for $.Deferred
 
     defaultSuccessEvent: '', // OpenAjax event string, in case no success callback is defined
     defaultErrorEvent: '', // OpenAjax event string, in case no error callback is defined
@@ -35,6 +36,7 @@ $.Class.extend('Liquid.Ajax',
     _ajaxCallbackCount: 0, // Callback counter (last callback id)
     _ajaxCallbacks: {}, // Assoc list of callbacks    
     _ajaxQueue: [],
+    _ajaxDeferred: {},
     
     _events: {},
 
@@ -297,11 +299,17 @@ $.Class.extend('Liquid.Ajax',
         return this._ajaxCallbackCount;
     },
 
-    getAjaxCallbackId: function (rpcRequest) {
+    getAjaxCallbackId: function (rpcRequest, deferred) {
         var successCallbackId = rpcRequest.success ? this.addAjaxCallback(rpcRequest.success) : this.defaultSuccessEvent;
         var errorCallbackId = rpcRequest.error ? this.addAjaxCallback(rpcRequest.error) : this.defaultErrorEvent;
 
-        return successCallbackId + ':' + errorCallbackId + ':' + this.connectionNumber;
+        var key = successCallbackId + ':' + errorCallbackId + ':' + this.connectionNumber;
+        
+        if(deferred) {
+            this._ajaxDeferred[key] = deferred;
+        }
+        
+        return key;
     },
     
     fixture: function(settings, callbackType) {
@@ -363,7 +371,7 @@ $.Class.extend('Liquid.Ajax',
         
         var data;
         var url;
-        var deferred;
+        var deferred = this.useDeferred ? $.Deferred() : null;
         var aggregate = false;
 
         this.log('Sending RPC request: ', request);
@@ -375,7 +383,7 @@ $.Class.extend('Liquid.Ajax',
                     service: request[i].service,
                     method: request[i].method,
                     params: request[i].params,
-                    id: this.getAjaxCallbackId(request[i])
+                    id: this.getAjaxCallbackId(request[i], deferred)
                 });
             }
             url = this.rpcUrl + '/aggregate';
@@ -384,7 +392,7 @@ $.Class.extend('Liquid.Ajax',
             data = {
                 method: request['method'],
                 params: request['params'],
-                id: this.getAjaxCallbackId(request)
+                id: this.getAjaxCallbackId(request, deferred)
             }
 
             url = this.rpcUrl + '/' + request['service'];
@@ -401,7 +409,7 @@ $.Class.extend('Liquid.Ajax',
             url: url + '?t=' + encodeURIComponent(this.secret),
             data: jQuery.toJSON(data),
             success: this.callback('onAjaxSuccess'),
-            error: this.callback('onAjaxError', deferred, request),
+            error: this.callback('onAjaxError', deferred, request, data),
             dataType: 'json',
             processData: false,
             fixture: fixture
@@ -411,7 +419,7 @@ $.Class.extend('Liquid.Ajax',
         
         this.triggerEvent('rpc', [ajaxRequest, xhr]);
         
-        return deferred;
+        return deferred ? deferred.promise() : xhr;
     },
 
     onAjaxSuccess: function (data) { // Default AJAX success handler for rpc() (see above)
@@ -432,14 +440,28 @@ $.Class.extend('Liquid.Ajax',
         this.triggerEvent('onAjaxSuccess', arguments);
     },
 
-    onAjaxError: function (deferred, request, xhr, options) { // Default AJAX error handler for rpc() (see above)
+    onAjaxError: function (deferred, request, data, xhr, options) { // Default AJAX error handler for rpc() (see above)
         if(xhr.status == 401) {
             this.onDisconnected();
+            
             if(this.useQueue) {
                 this._ajaxQueue.push(request);
+            } else {
+                this.publishRpcResponse({
+                    id: data.id, 
+                    result: null, 
+                    error: {"code": -32000, "message": "Unauthorized", "data": xhr}
+                });
             }
+          
             this.sendInitRequest();
         } else {
+            this.publishRpcResponse({
+                id: data.id, 
+                result: null, 
+                error: {"code": -32001, "message": "Server error", "data": xhr}
+            });
+            
             this.log('WARNING: Got unexpected error from server: ', xhr);
         }
         
@@ -455,17 +477,24 @@ $.Class.extend('Liquid.Ajax',
         this.log('Got RPC response: ', response);
 
         var parts = response.id.split(':');
-
+        var deferred = this._ajaxDeferred[response.id];
+        
         if(response.error) {
             var callbackId = parts[1];
             var data = response.error;
             this.triggerEvent('onRpcError', [data]);
             this.deleteAjaxCallback(parts[0]);
+            deferred.resolve(data);
         } else {
             var callbackId = parts[0];
             var data = response.result;
             this.triggerEvent('onRpcSuccess', [data]);
             this.deleteAjaxCallback(parts[1]);
+            deferred.reject(data);
+        }
+        
+        if(deferred) {
+            delete this._ajaxDeferred[response.id];
         }
 
         if(isNaN(callbackId)) {
