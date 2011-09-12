@@ -321,17 +321,31 @@ $.Class.extend('Liquid.Ajax',
         
         var ids = request.id.split(':');
         
-        $.getJSON(filename, {}, function (fixtureData) {
-            if(!fixtureData) return;
-            
-            if(!fixtureData.error && settings.success && ids[0]) {
-                settings.success({id: request.id, result: fixtureData.result, error: null});
-            }
+        var result = '';
+        
+        $.ajax({
+            url: filename,
+            dataType: 'json',
+            data: {},
+            async: false,
+            success: function (fixtureData) {
+                if(!fixtureData) return;
+                
+                if(!fixtureData.error && ids[0]) {
+                    result = {id: request.id, result: fixtureData.result, error: null}
+                }
 
-            if(fixtureData.error && settings.error && ids[1]) {
-                settings.error({id: request.id, error: fixtureData.error, result: null});
+                if(fixtureData.error && ids[1]) {
+                    result = {id: request.id, error: fixtureData.error, result: null}
+                }
             }
         });
+        
+        var xhr = {
+            responseText: JSON.stringify(result)
+        }
+
+        return [result, 'success', xhr]
     },
 
     rpc: function(request) { // Sends a JSON-RPC (Remote procedure call) request to the server
