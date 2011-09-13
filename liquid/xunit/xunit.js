@@ -1,7 +1,7 @@
 /*
  * xUnit XML log output JavaScriptMVC plugin
  *
- * The output file can be used for integration with the Jenkins CI server
+ * The output file can be used for integration with the Jenkins (or any other) CI server
  * 
  * To enable logging, please set FuncUnit.xmlLogFilename to a filename of 
  * your choice in settings.js. You can also define a test case class name
