@@ -13,7 +13,7 @@ steal('jquery')
     module('liquid/date');
     
     test('parseDateTimeString()', function(){
-        expect(4);
+        expect(7);
 
         var date = Liquid.Date.parseDateTimeString('2011-01-22 19:34:00');
         equals(Math.floor(date.getTime() / 1000), 1298403240);
@@ -24,8 +24,17 @@ steal('jquery')
         date = Liquid.Date.parseDateTimeString('1950-01-22T19:34:00Z');
         equals(Math.floor(date.getTime() / 1000), -626588760);
         
+        date = Liquid.Date.parseDateTimeString('2011-01-22');
+        equals(Math.floor(date.getTime() / 1000), 1298332800);
+
+        date = Liquid.Date.parseDateTimeString('22.01.2011');
+        equals(Math.floor(date.getTime() / 1000), 1298332800);
+
+        date = Liquid.Date.parseDateTimeString('01/22/2011');
+        equals(Math.floor(date.getTime() / 1000), 1298332800);
+        
         try {
-            date = Liquid.Date.parseDateTimeString('2011-01-22Q19:34:00Z');
+            date = Liquid.Date.parseDateTimeString('2011-010-22 19:34:00Z');
             ok(false, 'Invalid date string throws exception');
         } catch (e) {
             ok(true, 'Invalid date string throws exception');
@@ -37,7 +46,7 @@ steal('jquery')
         ok(date instanceof Liquid.Date, 'date is an instance of Liquid.Date');
         
         try {
-            date = Liquid.Date.getInstance('2011-01-2219:34:00');
+            date = Liquid.Date.getInstance('0011-01-22 19:34:00');
             ok(false, 'Invalid dates throw an exception');
         } catch(e) {
             ok(true, 'Invalid dates throw an exception');

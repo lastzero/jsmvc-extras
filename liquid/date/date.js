@@ -15,6 +15,9 @@ $.Class.extend('Liquid.Date',
      * Common date formats
      */
     regex: {
+        dateISO: /([0-9]{4})-([0-9]{2})-([0-9]{2})/,
+        dateEU: /([0-9]{2})\.([0-9]{2})\.([0-9]{4})/,
+        dateUS: /([0-9]{2})\/([0-9]{2})\/([0-9]{4})/,
         mysql: /([0-9]{4})-([0-9]{2})-([0-9]{2}) ([0-9]{2}):([0-9]{2}):([0-9]{2})/,
         iso8601: /(\d\d\d\d)(-)?(\d\d)(-)?(\d\d)(T)?(\d\d)(:)?(\d\d)(:)?(\d\d)(\.\d+)?(Z|([+-])(\d\d)(:)?(\d\d))/
     },
@@ -35,15 +38,15 @@ $.Class.extend('Liquid.Date',
             throw 'Day is invalid: ' + day;
         }
 
-        if(hour > 23 || hour < 0) {
+        if(hour != undefined && (hour > 23 || hour < 0)) {
             throw 'Hour is invalid: ' + hour;
         }
 
-        if(minute > 59 || minute < 0) {
+        if(minute != undefined && (minute > 59 || minute < 0)) {
             throw 'Minute is invalid: ' + minute;
         }
 
-        if(second > 59 || second < 0) {
+        if(second != undefined && (second > 59 || second < 0)) {
             throw 'Second is invalid: ' + second;
         }
         
@@ -57,7 +60,7 @@ $.Class.extend('Liquid.Date',
      */
     parseDateTimeString: function (dateTimeString) {
         var dateComponents;
-        var date = new Date();
+        var date = new Date(0);
         
         if(dateComponents = this.regex.mysql.exec(dateTimeString)) {
             this.checkDateTimeLimits(
@@ -105,6 +108,43 @@ $.Class.extend('Liquid.Date',
                 offset *= ((dateComponents[14] == '-') ? -1 : 1);
                 date.setTime(date.getTime() - offset * 60 * 1000);
             }
+            
+            return date;
+        } else if (dateComponents = this.regex.dateISO.exec(dateTimeString)) {
+            console.log(dateComponents);
+            this.checkDateTimeLimits(
+                dateComponents[1], 
+                dateComponents[2], 
+                dateComponents[3]
+            );
+
+            date.setUTCFullYear(dateComponents[1]);
+            date.setUTCMonth(dateComponents[2]);
+            date.setUTCDate(dateComponents[3]);
+            
+            return date;
+        } else if (dateComponents = this.regex.dateEU.exec(dateTimeString)) {
+            this.checkDateTimeLimits(
+                dateComponents[3], 
+                dateComponents[2], 
+                dateComponents[1]
+            );
+
+            date.setUTCFullYear(dateComponents[3]);
+            date.setUTCMonth(dateComponents[2]);
+            date.setUTCDate(dateComponents[1]);
+            
+            return date;
+        } else if (dateComponents = this.regex.dateUS.exec(dateTimeString)) {
+            this.checkDateTimeLimits(
+                dateComponents[3], 
+                dateComponents[1], 
+                dateComponents[2]
+            );
+
+            date.setUTCFullYear(dateComponents[3]);
+            date.setUTCMonth(dateComponents[1]);
+            date.setUTCDate(dateComponents[2]);
             
             return date;
         }
