@@ -744,7 +744,7 @@ $.Class.extend('Liquid.Form',
         for(var key in this.Class._definition) {
             var instance = this._modelInstances[this.Class._definition[key].model.fullName];
             
-            if(instance != undefined && instance[key] != undefined) {
+            if(typeof instance != 'undefined' && typeof instance[key] != 'undefined') {
                 this.setValue(key, instance[key]);
             }            
         }

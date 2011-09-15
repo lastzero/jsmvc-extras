@@ -39,11 +39,6 @@ steal('jquery')
             ok(errorsSimple[i], 'Error message exists (' + i + ')');
         }
         
-        var models = Liquid.Form.Test.Form.getInstance({name: 'Me'}).getModels();
-        
-        ok(models['Liquid.Form.Test.Model'], 'Example model is returned');
-        ok(models['Liquid.Form.Test.Model'] instanceof Liquid.Form.Test.Model, 'Example model has the right class');
-        
         form.setValue('smart', true);
         
         form.setValue('age', 23).validate();
@@ -492,7 +487,11 @@ steal('jquery')
     });
     
     test('setViewPath()', function () {
-        var form = Liquid.Form.setDefinition({
+        if(!Liquid.Form.setViewPathTest) {
+            Liquid.Form.extend('Liquid.Form.setViewPathTest');
+        }
+        
+        var form = Liquid.Form.setViewPathTest.setDefinition({
             'birthday': {
                 'caption': 'Birthday',
                 'type': 'numeric',
@@ -500,13 +499,11 @@ steal('jquery')
             }
         }).getInstance();
         
-        Liquid.Form.setViewPath('//liquid/form/errors/');
-        
         var errors = form.validate().getSimpleErrors();
         
         equals(errors.birthday, 'Birthday is required');
         
-        Liquid.Form.setViewPath('//liquid/form/test/');
+        Liquid.Form.setViewPathTest.setViewPath('//liquid/form/test/');
         
         errors = form.clearErrors().validate().getSimpleErrors();
         
@@ -514,7 +511,11 @@ steal('jquery')
     });
     
     test('setViewExtension()', function () {
-        var form = Liquid.Form.setDefinition({
+        if(!Liquid.Form.setViewExtensionTest) {
+            Liquid.Form.extend('Liquid.Form.setViewExtensionTest');
+        }
+        
+        var form = Liquid.Form.setViewExtensionTest.setDefinition({
             'birthday': {
                 'caption': 'Birthday',
                 'type': 'numeric',
@@ -522,17 +523,24 @@ steal('jquery')
             }
         }).getInstance();
         
-        Liquid.Form.setViewPath('//liquid/form/errors/');
-        
         var errors = form.validate().getSimpleErrors();
         
         equals(errors.birthday, 'Birthday is required');
         
-        Liquid.Form.setViewPath('//liquid/form/test/');
-        Liquid.Form.setViewExtension('.micro');
+        Liquid.Form.setViewExtensionTest.setViewPath('//liquid/form/test/');
+        Liquid.Form.setViewExtensionTest.setViewExtension('.micro');
         
         errors = form.clearErrors().validate().getSimpleErrors();
         
         equals(errors.birthday, 'This is a micro test!');
+    });
+    
+    test('getModels()', function () {
+        var form = Liquid.Form.Test.Form.getInstance({name: 'Me'}).validate();
+        
+        var models = Liquid.Form.Test.Form.getInstance({name: 'Me'}).getModels();
+        
+        ok(models['Liquid.Form.Test.Model'], 'Example model is returned');
+        ok(models['Liquid.Form.Test.Model'] instanceof Liquid.Form.Test.Model, 'Example model has the right class');
     });
 });
