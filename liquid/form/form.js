@@ -268,7 +268,7 @@ $.Class.extend('Liquid.Form',
     _numericValidator: function (data, def, form) {
         var result = [];
         
-        if(def.required && data === null) {
+        if(def.required && (data === null || data === '')) {
             result.push(this._renderValidationError(def, 'required'));
             return result;
         }
