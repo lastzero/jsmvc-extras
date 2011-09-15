@@ -38,20 +38,15 @@
  * @license    http://www.opensource.org/licenses/gpl-2.0.php GPL v2
  */
 
+steal('jquery/class').then('liquid/date').then(function () {
+
 $.Class.extend('Liquid.Form', 
 /* @Static */
 {
     /*
-     * Common date formats for date validation
-     */
-    dateRegex: {
-        mysql: /([0-9]{4})-([0-9]{2})-([0-9]{2}) ([0-9]{2}):([0-9]{2}):([0-9]{2})/,
-        iso: /(\d\d\d\d)(-)?(\d\d)(-)?(\d\d)(T)?(\d\d)(:)?(\d\d)(:)?(\d\d)(\.\d+)?(Z|([+-])(\d\d)(:)?(\d\d))/
-    },
-
-    /*
      * Assign form field definitions (overwrites existing definitions)
      * @param {Object} definition Contains the form field definitions
+     * @return {Object} this (for chaining)
      */   
     setDefinition: function (definition) {
         this._definition = definition;
@@ -63,6 +58,7 @@ $.Class.extend('Liquid.Form',
      * Add a form field definition (does not overwrite existing definition)
      * @param {String} key Field name
      * @param {Object} definition Field definition
+     * @return {Object} this (for chaining)
      */   
     addDefinition: function (key, definition) {
         if(typeof this._definition[key] != 'undefined') {
@@ -78,6 +74,7 @@ $.Class.extend('Liquid.Form',
      * Update a form field definition (overwrites existing definition properties)
      * @param {String} key Field name
      * @param {Object} definition Updated field definition
+     * @return {Object} this (for chaining)
      */   
     changeDefinition: function (key, changes) {
         if(typeof this._definition[key] == 'undefined') {
@@ -97,14 +94,16 @@ $.Class.extend('Liquid.Form',
     
     /*
      * Returns all form field definitions
+     * @return {Object} Form field definitions
      */   
     getDefinition: function () {
         return $.extend(true, {}, this._definition); // Make sure to clone the definition object!
     },
     
     /*
-     * Returns an instance of the current 
+     * Returns a form instance
      * @param {Object} data Field values (optional; overwrites default from form field definition)
+     * @return {Object} Instance of form
      */   
     getInstance: function (data) {
         return new this (data);
@@ -143,6 +142,11 @@ $.Class.extend('Liquid.Form',
     _stringValidator: function (data, def, form) {
         var result = [];
         
+        if(def.required && (data === null || data === '')) {
+            result.push(this._renderValidationError(def, 'required'));
+            return result;
+        }
+        
         if(typeof data != 'string') {
             result.push(this._renderValidationError(def, 'no_string'));
             return result;
@@ -175,6 +179,11 @@ $.Class.extend('Liquid.Form',
     _boolValidator: function (data, def, form) {
         var result = [];
         
+        if(def.required && data === null) {
+            result.push(this._renderValidationError(def, 'required'));
+            return result;
+        }
+        
         if(typeof data != 'boolean') {
             result.push(this._renderValidationError(def, 'no_boolean'));
             return result;
@@ -188,6 +197,11 @@ $.Class.extend('Liquid.Form',
      */
     _intValidator: function (data, def, form) {
         var result = [];
+        
+        if(def.required && data === null) {
+            result.push(this._renderValidationError(def, 'required'));
+            return result;
+        }
         
         if(isNaN(data) || parseInt(data) != data) {
             result.push(this._renderValidationError(def, 'no_integer'));
@@ -214,6 +228,11 @@ $.Class.extend('Liquid.Form',
      */
     _numericValidator: function (data, def, form) {
         var result = [];
+        
+        if(def.required && data === null) {
+            result.push(this._renderValidationError(def, 'required'));
+            return result;
+        }
         
         if(isNaN(data) || parseFloat(data) != data) {
             result.push(this._renderValidationError(def, 'no_number'));
@@ -259,6 +278,11 @@ $.Class.extend('Liquid.Form',
      */
     _listValidator: function (data, def, form) {
         var result = [];
+        
+        if(def.required && (data === null || !data.length)) {
+            result.push(this._renderValidationError(def, 'required'));
+            return result;
+        }
 
         if(typeof data != 'object') {
             result.push(this._renderValidationError(def, 'no_list'));
@@ -272,42 +296,30 @@ $.Class.extend('Liquid.Form',
      */
     _dateValidator: function (data, def, form) {
         var result = [];
-
-        var dateComponents; // = mysqlDateFormat.exec(data);
-        var date = new Date();
         
-        if(dateComponents = this.dateRegex.mysql.exec(data)) {            
-            date.setUTCFullYear(dateComponents[1]);
-            date.setUTCMonth(dateComponents[2]);
-            date.setUTCDate(dateComponents[3]);
-            date.setUTCHours(dateComponents[4]);
-            date.setUTCMinutes(dateComponents[5]);
-            date.setUTCSeconds(dateComponents[6]);            
-            
-            // TODO: Check min/max/match
-        } else if (dateComponents = this.dateRegex.iso.exec(data)) {
-            date.setUTCFullYear(dateComponents[1]);
-            date.setUTCMonth(dateComponents[3]);
-            date.setUTCDate(dateComponents[5]);
-            date.setUTCHours(dateComponents[7]);
-            date.setUTCMinutes(dateComponents[9]);
-            date.setUTCSeconds(dateComponents[11]); 
-            
-            if (dateComponents[12]) {
-                date.setUTCMilliseconds(parseFloat(dateComponents[12]) * 1000);
-            } else {
-                date.setUTCMilliseconds(0);
-            }
-            
-            if (dateComponents[13] != 'Z') {
-                var offset = (dateComponents[15] * 60) + parseInt(dateComponents[17], 10);
-                offset *= ((dateComponents[14] == '-') ? -1 : 1);
-                date.setTime(date.getTime() - offset * 60 * 1000);
-            }
-            
-            // TODO: Check min/max/match   
-        } else {
+        if(def.required && data === null) {
+            result.push(this._renderValidationError(def, 'required'));
+            return result;
+        }
+
+        try {
+            var date = new Liquid.Date(data);
+        } catch(e) {
             result.push(this._renderValidationError(def, 'no_date'));
+
+            return result;
+        }
+        
+        if(def.min != undefined && date.before(def.min)) {
+            result.push(this._renderValidationError(def, 'date_too_early'));
+        }
+        
+        if(def.max != undefined && date.after(def.max)) {
+            result.push(this._renderValidationError(def, 'date_too_late'));
+        }
+        
+        if(def.matches != undefined && !date.equals(form.getValue(def.matches))) {
+            result.push(this._renderValidationError(def, 'no_match'));
         }
         
         return result;
@@ -339,8 +351,8 @@ $.Class.extend('Liquid.Form',
     },
     
     /*
-     * Returns the form definition data AND the corresponding values all in one object
      * This can be useful to send form data to the server or for rendering HTML
+     * @return {Object} Returns the form definition data AND the corresponding values all in one object
      */
     getForm: function () {
         var result = {};
@@ -354,9 +366,9 @@ $.Class.extend('Liquid.Form',
     },
     
     /*
-     * Returns the form definition or a subset (in case key and propertyName are provided)
      * @param {String} key Optional field name
      * @param {String} propertyName Optional property name
+     * @return {Object} Returns the form definition or a subset (in case key and propertyName are provided)
      */
     getDefinition: function (key, propertyName) {
         if(propertyName) {
@@ -381,6 +393,7 @@ $.Class.extend('Liquid.Form',
      * Sets form field value and resets validation flag
      * @param {String} key Field name
      * @param {String} value Field value
+     * @return {Object} this (for chaining)
      */
     setValue: function (key, value) {
         if(this.Class._definition[key] != undefined) {
@@ -393,8 +406,8 @@ $.Class.extend('Liquid.Form',
     },
     
     /*
-     * Returns form field value and throws an exception, if field is not defined in form
      * @param {String} key Field name
+     * @return {Mixed} Returns form field value and throws an exception, if field is not defined in form
      */
     getValue: function (key) {
         if(this.Class._definition[key] != undefined) {
@@ -411,6 +424,7 @@ $.Class.extend('Liquid.Form',
     /*
      * Assigns all values to the form and throws an exception, if a form field is not defined
      * @param {Object} values The values to be stored
+     * @return {Object} this (for chaining)
      */
     setAllValues: function (values) {
         for(var key in values) {
@@ -423,6 +437,7 @@ $.Class.extend('Liquid.Form',
     /*
      * Tries to get all form field values from "values" and throws an exception is something is missing
      * @param {Object} values The values to be stored
+     * @return {Object} this (for chaining)
      */
     setDefinedValues: function (values) {
         for(var key in this.Class._definition) {
@@ -441,6 +456,7 @@ $.Class.extend('Liquid.Form',
     /*
      * Assigns all user writable values to the form and throws an exception, if a form field is not defined
      * @param {Object} values The values to be stored
+     * @return {Object} this (for chaining)
      */
     setWritableValues: function (values) {
         for(var key in values) {
@@ -455,6 +471,7 @@ $.Class.extend('Liquid.Form',
     /*
      * Combination of setDefinedValues and setWritableValues
      * @param {Object} values The values to be stored
+     * @return {Object} this (for chaining)
      */
     setDefinedWritableValues: function (values) {
         for(var key in this.Class._definition) {
@@ -476,6 +493,7 @@ $.Class.extend('Liquid.Form',
      * Only assigns values on the given page number
      * @param {Object} values The values to be stored
      * @param {Integer} page Page number
+     * @return {Object} this (for chaining)
      */
     setDefinedWritableValuesOnPage: function (values, page) {
         for(var key in this.Class._definition) {
@@ -499,6 +517,7 @@ $.Class.extend('Liquid.Form',
     /*
      * Assigns form field values from the given HTML element
      * @param {Object} el The form (as jQuery object)
+     * @return {Object} this (for chaining)
      */
     setValuesFromHtml: function (el) {
         var data = el.serializeArray();
@@ -514,7 +533,7 @@ $.Class.extend('Liquid.Form',
 
 
     /*
-     * Returns all values by page
+     * @return {Object} Returns all values by page
      */
     getValuesByPage: function () {
         var result = {};
@@ -536,7 +555,7 @@ $.Class.extend('Liquid.Form',
     },
     
     /*
-     * Returns all form field values (but not the form field definitions - use getForm() for that)
+     * @return {Object} Returns all form field values (but not the form field definitions - use getForm() for that)
      */
     getValues: function () {
         var result = {};
@@ -549,7 +568,7 @@ $.Class.extend('Liquid.Form',
     },
     
     /*
-     * True, if the validation detected any errors (run validate() first!)
+     * @return {Boolean} True, if the validation detected any errors (run validate() first!)
      */
     hasErrors: function () {
         if(!this._validationDone) {
@@ -560,7 +579,7 @@ $.Class.extend('Liquid.Form',
     },
     
     /*
-     * Returns all validation errors (run validate() first!)
+     * @return {Array} Returns all validation errors (run validate() first!)
      */
     getErrors: function () {
         if(!this._validationDone) {
@@ -571,7 +590,7 @@ $.Class.extend('Liquid.Form',
     },
     
     /*
-     * Returns validation errors in a flat object (only one error for each field)
+     * @return {Object} Returns validation errors in a flat object (only one error for each field)
      */
     getSimpleErrors: function () {
         var result = {};
@@ -590,7 +609,7 @@ $.Class.extend('Liquid.Form',
     },
     
     /*
-     * Returns all validation errors split up by page number
+     * @return {Object} Returns all validation errors split up by page number
      */
     getErrorsByPage: function () {
         var result = {};
@@ -614,6 +633,7 @@ $.Class.extend('Liquid.Form',
     
     /*
      * Deletes all existing model instances
+     * @return {Object} this (for chaining)
      */
     clearModels: function () {
         this._modelInstances = {};
@@ -624,6 +644,7 @@ $.Class.extend('Liquid.Form',
     /*
      * Resets all form field values to default
      * @param {Object} defaults Additional default values (not contained in form definition)
+     * @return {Object} this (for chaining)
      */
     clearValues: function (defaults) {
         this._values = {};
@@ -645,6 +666,7 @@ $.Class.extend('Liquid.Form',
 
     /*
      * Resets validation errors
+     * @return {Object} this (for chaining)
      */
     clearErrors: function () {
         this._validationDone = false;
@@ -656,6 +678,7 @@ $.Class.extend('Liquid.Form',
     /*
      * Validates the form field values (use getErrors(), getSimpleErrors() or getErrorsByPage() to get them)
      * @param {Object} callback Optional callback function to perform validation
+     * @return {Object} this (for chaining)
      */
     validate: function (callback) {
         if(callback) {
@@ -670,6 +693,7 @@ $.Class.extend('Liquid.Form',
     /*
      * Assigns models to the form and tries to initialize form field values from their data
      * @param {Array} models A list of models (type will be detected automatically)
+     * @return {Object} this (for chaining)
      */
     setModels: function (models) {
         if(!$.isArray(models)) models = [models];
@@ -690,7 +714,7 @@ $.Class.extend('Liquid.Form',
     },
     
     /*
-     * Returns models (updated with the current form field values)
+     * @return {Object} Returns models (updated with the current form field values)
      */
     getModels: function () {
         var modelData = {};
@@ -750,16 +774,16 @@ $.Class.extend('Liquid.Form',
     },
     
     /*
-     * Returns true, if key is read only (private function)
      * @param {String} key The field name (must be defined in the form definition)
+     * @return {Boolean} Returns true, if key is read only (private function)
      */
     _isWritable: function (key) {
         return this.getDefinition(key, 'readonly') != true;
     },
     
     /*
-     * Returns true, if key is a checkbox field (private function)
      * @param {String} key The field name (must be defined in the form definition)
+     * @return {Boolean} Returns true, if key is a checkbox field (private function)
      */
     _isCheckbox: function (key) {
         return this.getDefinition(key, 'checkbox') == true;
@@ -768,6 +792,7 @@ $.Class.extend('Liquid.Form',
     /*
      * Used by the default validation function to validate a form field (private function)
      * @param {String} key The field name (must be defined in the form definition)
+     * @return {Array} Errors for the given form field
      */
     _validateField: function (key) {
         if(!this.Class._definition[key].type) {
@@ -779,7 +804,7 @@ $.Class.extend('Liquid.Form',
         }
         
         return this.Class['_' + this.Class._definition[key].type + 'Validator'](
-            this._values[key],
+            this.getValue(key),
             this.Class._definition[key],
             this
         );
@@ -806,4 +831,6 @@ $.Class.extend('Liquid.Form',
         
         this._validationDone = true;
     }
+});
+
 });

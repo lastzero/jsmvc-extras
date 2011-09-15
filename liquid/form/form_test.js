@@ -42,6 +42,7 @@ steal('jquery')
         var models = Liquid.Form.Test.Form.getInstance({name: 'Me'}).getModels();
         
         ok(models['Liquid.Form.Test.Model'], 'Example model is returned');
+        ok(models['Liquid.Form.Test.Model'] instanceof Liquid.Form.Test.Model, 'Example model has the right class');
         
         form.setValue('smart', true);
         
@@ -91,6 +92,12 @@ steal('jquery')
                     'min': 3,
                     'max': 20,
                     'default': 'Something else'
+                },
+                
+                'foo': {
+                    'caption': 'Test',
+                    'required': true,
+                    'type': 'string'
                 }
             }
         );
@@ -104,7 +111,7 @@ steal('jquery')
 
         equals(form.getValue('name'), 'Me');
         
-        form.setDefinedValues({'name': 'You', 'email': 'foo@bar.com'});
+        form.setDefinedValues({'name': 'You', 'email': 'foo@bar.com', 'foo': ''});
 
         equals(form.getValue('name'), 'You');
         equals(form.getValue('email'), 'foo@bar.com');
@@ -115,6 +122,9 @@ steal('jquery')
         
         equals(form.getValue('name'), 'Hello World');
         equals(form.getValue('email'), 'foo@bar.com');
+        equals(form.getValue('foo'), '');
+        
+        equals(form.validate().getErrors().length, 1, 'One validation error');
     });
     
     test('setAllValues()', function(){
@@ -452,7 +462,9 @@ steal('jquery')
                 'caption': 'Birthday',
                 'type': 'date',
                 'readonly': false,
-                'page': 0
+                'page': 0,
+                'min': '1950-02-10 00:00:00',
+                'max': '2010-01-01T00:00:00Z'
             }
         }).getInstance();
         
@@ -465,6 +477,10 @@ steal('jquery')
         form.setValue('birthday', '2008-11-01T20:39:57.78-06:00'); // Valid (ISO)
 
         equals(form.validate().getErrors().length, 0);
+
+        form.setValue('birthday', '2013-11-01T20:39:57.78-06:00'); // Valid (ISO) but too late
+
+        equals(form.validate().getErrors().length, 1);
         
         form.setValue('birthday', '1981-02-2313:25:01'); // Invalid
         
