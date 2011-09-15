@@ -8,7 +8,7 @@
 steal('jquery')
 .then('jquery/class')
 .then('jquery/model', 'jquery/view')
-.then('jquery/view/ejs')
+.then('jquery/view/ejs', 'jquery/view/micro')
 .then('liquid/form')
 .then('liquid/form/test/model.js')
 .then('liquid/form/test/form.js')
@@ -489,5 +489,50 @@ steal('jquery')
         form.setValue('birthday', '1981-02-23'); // Invalid
         
         equals(form.validate().getErrors().length, 1);
+    });
+    
+    test('setViewPath()', function () {
+        var form = Liquid.Form.setDefinition({
+            'birthday': {
+                'caption': 'Birthday',
+                'type': 'numeric',
+                'required': true
+            }
+        }).getInstance();
+        
+        Liquid.Form.setViewPath('//liquid/form/errors/');
+        
+        var errors = form.validate().getSimpleErrors();
+        
+        equals(errors.birthday, 'Birthday is required');
+        
+        Liquid.Form.setViewPath('//liquid/form/test/');
+        
+        errors = form.clearErrors().validate().getSimpleErrors();
+        
+        equals(errors.birthday, 'This is a test!');
+    });
+    
+    test('setViewExtension()', function () {
+        var form = Liquid.Form.setDefinition({
+            'birthday': {
+                'caption': 'Birthday',
+                'type': 'numeric',
+                'required': true
+            }
+        }).getInstance();
+        
+        Liquid.Form.setViewPath('//liquid/form/errors/');
+        
+        var errors = form.validate().getSimpleErrors();
+        
+        equals(errors.birthday, 'Birthday is required');
+        
+        Liquid.Form.setViewPath('//liquid/form/test/');
+        Liquid.Form.setViewExtension('.micro');
+        
+        errors = form.clearErrors().validate().getSimpleErrors();
+        
+        equals(errors.birthday, 'This is a micro test!');
     });
 });

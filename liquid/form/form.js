@@ -43,6 +43,45 @@ steal('jquery/class').then('liquid/date').then(function () {
 $.Class.extend('Liquid.Form', 
 /* @Static */
 {
+    _viewPath: '//liquid/form/errors/',
+    _viewExtension: '.ejs',
+    
+    /*
+     * @param {String} path The new default view path
+     */
+    setViewPath: function (path) {
+        if(!path || typeof path != 'string') {
+            throw 'Empty or invalid path proviced to setViewPath()';
+        }
+        
+        this._viewPath = path;
+    },
+    
+    /*
+     * @param {String} path The new view extension (e.g. '.ejs');
+     */
+    setViewExtension: function (type) {
+        if(!type || typeof type != 'string') {
+            throw 'Empty or invalid path proviced to setDefaultViewType()';
+        }
+        
+        this._viewExtension = type;
+    },
+    
+    /*
+     * @return {String} The view path
+     */
+    getViewPath: function () {
+        return this._viewPath;
+    },
+    
+    /*
+     * @return {String} Returns the view extension (e.g. '.ejs');
+     */
+    getViewExtension: function () {
+        return this._viewExtension;
+    },
+    
     /*
      * Assign form field definitions (overwrites existing definitions)
      * @param {Object} definition Contains the form field definitions
@@ -123,7 +162,7 @@ $.Class.extend('Liquid.Form',
     _renderValidationError: function (fieldDefinition, errorType) {
         var result = {};
 
-        var text = $.View('//liquid/form/errors/' + errorType + '.ejs', 
+        var text = $.View(this.getViewPath() + errorType + this.getViewExtension(), 
             {
                 rules: fieldDefinition, // Definition of current field
                 form: this.getDefinition(), // Complete form definition, not just the field
