@@ -601,6 +601,10 @@ $.Class.extend('Liquid.Form',
     setValuesFromHtml: function (el) {
         var data = el.serializeArray();
         var values = {};
+
+        if(data.length == 0) {
+            throw 'Could not find any form elements - did you forget the name attributes?';
+        }
         
         for(var i = 0; i < data.length; i++) {
             if(typeof values[data[i].name] == 'undefined') {
@@ -612,9 +616,7 @@ $.Class.extend('Liquid.Form',
             }
         }
         
-        this.setDefinedWritableValues(values);
-        
-        return this;
+        return this.setDefinedWritableValues(values);
     },
 
 
