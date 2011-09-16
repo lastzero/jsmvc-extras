@@ -497,9 +497,7 @@ steal('jquery')
         var errors = form.validate().getErrors();
         
         equals(errors.length, 1);
-        
-        console.log(errors);
-        
+                
         var values = form.getValues();
         
         ok($.isArray(values['animals']), 'animals is an Array');
