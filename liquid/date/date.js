@@ -185,8 +185,10 @@ $.Class.extend('Liquid.Date',
     setup: function (date) {
         if(date instanceof Date) {
             this.setDateInstance(date);
-        } else if(date) {
+        } else if(typeof date == 'string') {
             this.setDateInstance(this.Class.parseDateTimeString(date));
+        } else if(typeof date != 'undefined') {
+            throw 'Invalid date parameter';
         }
     },
     

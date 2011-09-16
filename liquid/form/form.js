@@ -376,7 +376,7 @@ $.Class.extend('Liquid.Form',
     _dateValidator: function (data, def, form) {
         var result = [];
         
-        if(def.required && data === null) {
+        if(def.required && (data === null || data === '')) {
             result.push(this._renderValidationError(def, 'required'));
             return result;
         }
@@ -388,7 +388,7 @@ $.Class.extend('Liquid.Form',
 
             return result;
         }
-                
+        
         if(def.min != undefined) {
             try {
                 if(date.before(form.getValue(def.min))) {
