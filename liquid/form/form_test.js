@@ -111,12 +111,12 @@ steal('jquery')
         equals(form.getValue('name'), 'You');
         equals(form.getValue('email'), 'foo@bar.com');
 
-        var htmlForm = $('<form><input type="text" name="name" value="Hello World" /></form>');
+        var htmlForm = $('<form><input type="text" name="name" value="Hello World" /><input type="text" name="email" value="abc@test.com" /><input type="text" name="foo" value="" /></form>');
         
         form.setValuesFromHtml(htmlForm);
         
         equals(form.getValue('name'), 'Hello World');
-        equals(form.getValue('email'), 'foo@bar.com');
+        equals(form.getValue('email'), 'abc@test.com');
         equals(form.getValue('foo'), '');
         
         equals(form.validate().getErrors().length, 1, 'One validation error');
@@ -450,6 +450,66 @@ steal('jquery')
         }
     });
     
+    test('_listValidator', function(){
+        Liquid.Form.setDefinition(
+            {
+                'cars': {
+                    'caption': 'Cars',
+                    'type': 'list',
+                    'min': 1,
+                    'max': 3,
+                    'options': ['bmw', 'porsche', 'mercedes', 'vw']
+                },
+                
+                'animals': {
+                    'caption': 'Animals',
+                    'type': 'list',
+                    'required': true,
+                    'options': {'cat': 'Cat <3', 'dog': 'Dog', 'fish': 'Fish'}
+                }
+            }
+        );
+        
+        var form = Liquid.Form.getInstance();
+        
+        form.setDefinedWritableValues({
+            'cars': ['bmw', 'vw'],
+            'animals': 'cat'
+        });
+        
+        var errors = form.validate().getErrors();
+        
+        equals(errors.length, 0);
+        
+        var values = form.getValues();
+                
+        equals(typeof values, 'object', 'Form values are in an object');
+        ok($.isArray(values['cars']), 'cars is an Array');
+        ok($.isArray(values['animals']), 'animals is an Array');
+        equals(values.cars.length, 2);
+        equals(values.animals.length, 1);
+        
+        form.setDefinedWritableValues({
+            'cars': ['bmw', 'vw'],
+            'animals': 'worm'
+        });
+        
+        var errors = form.validate().getErrors();
+        
+        equals(errors.length, 1);
+        
+        console.log(errors);
+        
+        var values = form.getValues();
+        
+        ok($.isArray(values['animals']), 'animals is an Array');
+        equals(values.animals.length, 1);
+        
+        Liquid.Form.changeDefinition('animals', {'options': null});
+        
+        equals(form.clearErrors().validate().getErrors().length, 0);
+    });
+    
     test('_dateValidator', function(){
         // expect(3);
         var form = Liquid.Form.setDefinition({
@@ -477,11 +537,11 @@ steal('jquery')
 
         equals(form.validate().getErrors().length, 1);
         
-        form.setValue('birthday', '1981-02-2313:25:01'); // Invalid
+        form.setValue('birthday', '1981-02A2313:25:01'); // Invalid
         
         equals(form.validate().getErrors().length, 1);
         
-        form.setValue('birthday', '1981-02-23'); // Invalid
+        form.setValue('birthday', '1981-00-23'); // Invalid
         
         equals(form.validate().getErrors().length, 1);
     });

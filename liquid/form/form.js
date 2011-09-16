@@ -122,7 +122,7 @@ $.Class.extend('Liquid.Form',
 
         for(var prop in changes) {
             if(changes[prop] == null) {
-                unset(this._definition[key][prop]);
+                delete this._definition[key][prop];
             } else {
                 this._definition[key][prop] = changes[prop];
             }
@@ -323,8 +323,48 @@ $.Class.extend('Liquid.Form',
             return result;
         }
 
-        if(typeof data != 'object') {
+        if(data !== null && !$.isArray(data)) {
             result.push(this._renderValidationError(def, 'no_list'));
+        }
+        
+        if($.isArray(data)) {
+            if(def.min != undefined && data.length < def.min) {
+                result.push(this._renderValidationError(def, 'list_too_short'));
+            }
+
+            if(def.max != undefined && data.length > def.max) {
+                result.push(this._renderValidationError(def, 'list_too_long'));
+            }
+            
+            var invalidItem = false;
+            
+            if(def.options != undefined && $.isArray(def.options)) {
+                var found;
+                for(var i in data) {
+                    found = false;
+                    for(var j in def.options) {
+                        if(data[i] == def.options[j]) {
+                            found = true;
+                            break;
+                        }
+                    }
+                    if(!found) {
+                        invalidItem = true;
+                        break;
+                    }
+                }                
+            } else if(typeof def.options == 'object') {
+                for(var i in data) {
+                    if(typeof def.options[data[i]] == 'undefined') {
+                        invalidItem = true;
+                        break;
+                    }
+                }
+            }
+            
+            if(invalidItem) {
+                result.push(this._renderValidationError(def, 'list_item_invalid'));
+            }
         }
         
         return result;
@@ -480,7 +520,7 @@ $.Class.extend('Liquid.Form',
      */
     setDefinedValues: function (values) {
         for(var key in this.Class._definition) {
-            this._setCheckboxValueInObject(key, values);
+            this._prepareRawValues(key, values);
             
             if(typeof values[key] === 'undefined') {
                 throw 'Object provided to setDefinedValues() was not complete: ' + key;
@@ -515,7 +555,7 @@ $.Class.extend('Liquid.Form',
     setDefinedWritableValues: function (values) {
         for(var key in this.Class._definition) {
             if(this._isWritable(key)) {
-                this._setCheckboxValueInObject(key, values);
+                this._prepareRawValues(key, values);
                 
                 if(typeof values[key] === 'undefined') {
                     throw 'Object provided to setDefinedWritableValues() was not complete: ' + key;
@@ -540,7 +580,7 @@ $.Class.extend('Liquid.Form',
                     && this.Class._definition[key]['page'] 
                     && this.Class._definition[key]['page'] == page 
                     && this._isWritable(key)) {
-                this._setCheckboxValueInObject(key, values);
+                this._prepareRawValues(key, values);
 
                 if(typeof values[key] == 'undefined') {
                     throw 'Object provided to setWritableValuesOnPage() was not complete: ' + key;
@@ -560,12 +600,19 @@ $.Class.extend('Liquid.Form',
      */
     setValuesFromHtml: function (el) {
         var data = el.serializeArray();
+        var values = {};
         
         for(var i = 0; i < data.length; i++) {
-            if(this.Class._definition[data[i].name] != undefined) {
-                this.setValue(data[i].name, data[i].value);
+            if(typeof values[data[i].name] == 'undefined') {
+                values[data[i].name] = data[i].value;
+            } else if($.isArray(values[data[i].name])) {
+                values[data[i].name].push(data[i].value);
+            } else if (values[data[i].name] != 'undefined') {
+                values[data[i].name] = [values[data[i].name], data[i].value];
             }
         }
+        
+        this.setDefinedWritableValues(values);
         
         return this;
     },
@@ -792,16 +839,17 @@ $.Class.extend('Liquid.Form',
     },
     
     /*
-     * Helper function to set checkbox fields to an acceptable default value
+     * Helper function that sets fields to an appropriate value (if empty)
      * @param {String} key The field name (must be defined in the form definition)
      * @param {Object} values Input values (raw form data in key/value format)
      */
-    _setCheckboxValueInObject: function (key, values) {
-        if(this._isCheckbox(key) && typeof values[key] === 'undefined') {
-            var type = this.getDefinition(key, 'type');
+    _prepareRawValues: function (key, values) {
+        var type = this.getDefinition(key, 'type');
+        
+        if(this._isCheckbox(key) && typeof values[key] === 'undefined') {            
             switch(type) {
-                case 'array':
-                    values[key] = array();
+                case 'list':
+                    values[key] = [];
                     break;
                 case 'bool':
                     values[key] = false;
@@ -809,6 +857,8 @@ $.Class.extend('Liquid.Form',
                 default:
                     values[key] = null;
             }
+        } else if(type == 'list' && typeof values[key] !== 'undefined' && !$.isArray(values[key])) {
+            values[key] = [values[key]];
         }
     },
     
