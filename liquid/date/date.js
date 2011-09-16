@@ -111,7 +111,6 @@ $.Class.extend('Liquid.Date',
             
             return date;
         } else if (dateComponents = this.regex.dateISO.exec(dateTimeString)) {
-            console.log(dateComponents);
             this.checkDateTimeLimits(
                 dateComponents[1], 
                 dateComponents[2], 
