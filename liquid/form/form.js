@@ -877,6 +877,8 @@ $.Class.extend('Liquid.Form',
             }
         } else if(type == 'list' && typeof values[key] !== 'undefined' && !$.isArray(values[key])) {
             values[key] = [values[key]];
+        } else if(type == 'string' && typeof values[key] == 'number') {
+            values[key] = String(values[key]);
         }
     },
     
