@@ -70,7 +70,7 @@ steal('jquery')
         equals(form.getErrors().length, 5);
     });
     
-    test('General data assignment', function(){
+    test('setValue()/getValue()', function(){
         Liquid.Form.setDefinition(
             {
                 'name': {
