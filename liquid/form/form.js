@@ -388,13 +388,29 @@ $.Class.extend('Liquid.Form',
 
             return result;
         }
-        
-        if(def.min != undefined && date.before(def.min)) {
-            result.push(this._renderValidationError(def, 'date_too_early'));
+                
+        if(def.min != undefined) {
+            try {
+                if(date.before(form.getValue(def.min))) {
+                    result.push(this._renderValidationError(def, 'date_too_early'));
+                }
+            } catch (e) {
+                if(date.before(def.min)) {
+                    result.push(this._renderValidationError(def, 'date_too_early'));
+                }
+            }
         }
         
-        if(def.max != undefined && date.after(def.max)) {
-            result.push(this._renderValidationError(def, 'date_too_late'));
+        if(def.max != undefined) {
+            try {
+                if(date.after(form.getValue(def.max))) {
+                    result.push(this._renderValidationError(def, 'date_too_late'));
+                }
+            } catch (e) {
+                if(date.after(def.max)) {
+                    result.push(this._renderValidationError(def, 'date_too_late'));
+                }
+            }
         }
         
         if(def.matches != undefined && !date.equals(form.getValue(def.matches))) {
