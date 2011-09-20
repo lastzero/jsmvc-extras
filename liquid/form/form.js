@@ -879,6 +879,10 @@ $.Class.extend('Liquid.Form',
             values[key] = [values[key]];
         } else if(type == 'string' && typeof values[key] == 'number') {
             values[key] = String(values[key]);
+        } else if(type == 'bool' && typeof values[key] == 'string') {
+            values[key] = (values[key] != '0' && values[key] != '');
+        } else if(type == 'bool' && typeof values[key] == 'number') {
+            values[key] = (values[key] != 0);
         }
     },
     
