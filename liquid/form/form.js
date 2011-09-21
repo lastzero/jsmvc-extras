@@ -817,6 +817,8 @@ $.Class.extend('Liquid.Form',
         }
         
         for(var key in this.Class._definition) {
+            if(!this.Class._definition[key].model) continue;
+            
             var instance = this._modelInstances[this.Class._definition[key].model.fullName];
             
             if(typeof instance != 'undefined' && typeof instance[key] != 'undefined') {
