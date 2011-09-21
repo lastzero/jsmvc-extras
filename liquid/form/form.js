@@ -191,22 +191,32 @@ $.Class.extend('Liquid.Form',
             return result;
         }
         
-        if(def.min != undefined && data.length < def.min) {
-            result.push(this._renderValidationError(def, 'string_too_short'));
-        }
-        
-        if(def.max != undefined && data.length > def.max) {
-            result.push(this._renderValidationError(def, 'string_too_long'));
-        }
-        
-        if(def.matches != undefined && data != form.getValue(def.matches)) {
-            result.push(this._renderValidationError(def, 'no_match'));
-        }
-        
-        if(def.regex != undefined) {
-            if(!def.regex.test(data)) {
-                result.push(this._renderValidationError(def, 'invalid'));
+        if(data != '' && !def.required) {
+            if (def.min !== undefined && data.length < def.min) {
+                result.push(this._renderValidationError(def, 'string_too_short'));
             }
+
+            if (def.max !== undefined && data.length > def.max) {
+                result.push(this._renderValidationError(def, 'string_too_long'));
+            }
+
+            if (def.matches !== undefined && data != form.getValue(def.matches)) {
+                result.push(this._renderValidationError(def, 'no_match'));
+            }
+
+            if (def.regex !== undefined) {
+                if (!def.regex.test(data)) {
+                    result.push(this._renderValidationError(def, 'invalid'));
+                }
+            }
+            
+            if (def.options && $.isArray(def.options)) {
+                if(!$.inArray(data, def.options)) {
+                    result.push(this._renderValidationError(def, 'invalid'));
+                }
+            } else if (typeof def.options == 'object' && typeof def.options[data] == 'undefined') {
+                result.push(this._renderValidationError(def, 'invalid'));
+            }            
         }
 
         return result;
