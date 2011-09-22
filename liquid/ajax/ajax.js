@@ -418,7 +418,7 @@ $.Class.extend('Liquid.Ajax',
             type: 'POST',
             url: url + '?t=' + encodeURIComponent(this.secret),
             data: jQuery.toJSON(data),
-            success: this.callback('onAjaxSuccess'),
+            success: this.callback('onAjaxSuccess', data),
             error: this.callback('onAjaxError', deferred, request, data),
             dataType: 'json',
             processData: false,
@@ -432,19 +432,19 @@ $.Class.extend('Liquid.Ajax',
         return deferred ? deferred.promise() : xhr;
     },
 
-    onAjaxSuccess: function (data) { // Default AJAX success handler for rpc() (see above)
-        if(data && data.aggregated) { // Aggregated response
-            for(var i = 0; i < data.aggregated.length; i++) {
-                this.publishRpcResponse(data.aggregated[i]);
+    onAjaxSuccess: function (requestData, responseData, status, xhr) { // Default AJAX success handler for rpc() (see above)
+        if(responseData && responseData.aggregated) { // Aggregated response
+            for(var i = 0; i < responseData.aggregated.length; i++) {
+                this.publishRpcResponse(responseData.aggregated[i]);
             }
 
-            if(data.messages) {
-                for(var i = 0; i < data.messages.length; i++) {
-                    OpenAjax.hub.publish(data.messages[i].channel, data.messages[i].body);
+            if(responseData.messages) {
+                for(var i = 0; i < responseData.messages.length; i++) {
+                    OpenAjax.hub.publish(responseData.messages[i].channel, responseData.messages[i].body);
                 }
             }
-        } else if(data) { // Normal JSON-RPC response
-            this.publishRpcResponse(data);
+        } else if(responseData) { // Normal JSON-RPC response
+            this.publishRpcResponse(responseData);
         }
         
         this.triggerEvent('onAjaxSuccess', arguments);
