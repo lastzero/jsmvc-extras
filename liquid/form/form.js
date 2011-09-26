@@ -211,7 +211,7 @@ $.Class.extend('Liquid.Form',
             }
             
             if (def.options && $.isArray(def.options)) {
-                if(!$.inArray(data, def.options)) {
+                if($.inArray(data, def.options) == -1) {
                     result.push(this._renderValidationError(def, 'invalid'));
                 }
             } else if (typeof def.options == 'object' && typeof def.options[data] == 'undefined') {
@@ -883,6 +883,13 @@ $.Class.extend('Liquid.Form',
                     break;
                 case 'bool':
                     values[key] = false;
+                    break;
+                case 'string':
+                    values[key] = '';
+                    break;
+                case 'numeric':
+                case 'int':
+                    values[key] = 0;
                     break;
                 default:
                     values[key] = null;
