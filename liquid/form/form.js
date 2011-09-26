@@ -386,20 +386,20 @@ $.Class.extend('Liquid.Form',
     _dateValidator: function (data, def, form) {
         var result = [];
         
-        if(def.required && !data) {
+        if(def.required && (data === null || data === '')) {
             result.push(this._renderValidationError(def, 'required'));
             return result;
         }
-
-        try {
-            var date = new Liquid.Date(data);
-        } catch(e) {
-            result.push(this._renderValidationError(def, 'no_date'));
-
-            return result;
-        }
         
-        if(data) {        
+        if(data != '') {
+            try {
+                var date = new Liquid.Date(data);
+            } catch(e) {
+                result.push(this._renderValidationError(def, 'no_date'));
+
+                return result;
+            }
+             
             if(def.min != undefined) {
                 try {
                     if(date.before(form.getValue(def.min))) {
