@@ -191,15 +191,15 @@ $.Class.extend('Liquid.Form',
             return result;
         }
         
-        if(data != '' && !def.required) {
-            if (def.min !== undefined && data.length < def.min) {
-                result.push(this._renderValidationError(def, 'string_too_short'));
-            }
+        if (def.min !== undefined && data.length < def.min) {
+            result.push(this._renderValidationError(def, 'string_too_short'));
+        }
 
-            if (def.max !== undefined && data.length > def.max) {
-                result.push(this._renderValidationError(def, 'string_too_long'));
-            }
-
+        if (def.max !== undefined && data.length > def.max) {
+            result.push(this._renderValidationError(def, 'string_too_long'));
+        }
+            
+        if(data != '') {
             if (def.matches !== undefined && data != form.getValue(def.matches)) {
                 result.push(this._renderValidationError(def, 'no_match'));
             }
