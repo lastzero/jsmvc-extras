@@ -386,7 +386,7 @@ $.Class.extend('Liquid.Form',
     _dateValidator: function (data, def, form) {
         var result = [];
         
-        if(def.required && (data === null || data === '')) {
+        if(def.required && !data) {
             result.push(this._renderValidationError(def, 'required'));
             return result;
         }
@@ -399,32 +399,34 @@ $.Class.extend('Liquid.Form',
             return result;
         }
         
-        if(def.min != undefined) {
-            try {
-                if(date.before(form.getValue(def.min))) {
-                    result.push(this._renderValidationError(def, 'date_too_early'));
-                }
-            } catch (e) {
-                if(date.before(def.min)) {
-                    result.push(this._renderValidationError(def, 'date_too_early'));
-                }
-            }
-        }
-        
-        if(def.max != undefined) {
-            try {
-                if(date.after(form.getValue(def.max))) {
-                    result.push(this._renderValidationError(def, 'date_too_late'));
-                }
-            } catch (e) {
-                if(date.after(def.max)) {
-                    result.push(this._renderValidationError(def, 'date_too_late'));
+        if(data) {        
+            if(def.min != undefined) {
+                try {
+                    if(date.before(form.getValue(def.min))) {
+                        result.push(this._renderValidationError(def, 'date_too_early'));
+                    }
+                } catch (e) {
+                    if(date.before(def.min)) {
+                        result.push(this._renderValidationError(def, 'date_too_early'));
+                    }
                 }
             }
-        }
-        
-        if(def.matches != undefined && !date.equals(form.getValue(def.matches))) {
-            result.push(this._renderValidationError(def, 'no_match'));
+            
+            if(def.max != undefined) {
+                try {
+                    if(date.after(form.getValue(def.max))) {
+                        result.push(this._renderValidationError(def, 'date_too_late'));
+                    }
+                } catch (e) {
+                    if(date.after(def.max)) {
+                        result.push(this._renderValidationError(def, 'date_too_late'));
+                    }
+                }
+            }
+            
+            if(def.matches != undefined && !date.equals(form.getValue(def.matches))) {
+                result.push(this._renderValidationError(def, 'no_match'));
+            }
         }
         
         return result;
