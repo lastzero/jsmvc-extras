@@ -150,6 +150,8 @@
         },
         
         onConnected: function () {
+            if(this.connected) return;
+            
             this.connected = true;
             
             if(this._ajaxQueue) {
@@ -163,6 +165,8 @@
         },
         
         onDisconnected: function () {
+            if(!this.connected) return;
+            
             this.connected = false;
             this.triggerEvent('onDisconnected', arguments);
         },

@@ -163,6 +163,8 @@ $.Class.extend('Liquid.Ajax',
     },
     
     onConnected: function () {
+        if(this.connected) return;
+        
         this.connected = true;
         
         if(this._ajaxQueue) {
@@ -176,6 +178,8 @@ $.Class.extend('Liquid.Ajax',
     },
     
     onDisconnected: function () {
+        if(!this.connected) return;
+        
         this.connected = false;
         this.triggerEvent('onDisconnected', arguments);
     },
