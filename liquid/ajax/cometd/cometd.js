@@ -1,56 +1,43 @@
 /**
- * Liquid.Ajax.Orbited adds support for the Orbited AJAX push server to Liquid.Ajax
+ * Liquid.Ajax.Cometd adds support for the CometD AJAX push server to Liquid.Ajax
  *
  * There also is a JSON-RPC client and server available for PHP:
  * https://github.com/smashedpumpkin/liquidlibrary/tree/master/Liquid/Ajax
  *
- * @class      Liquid.Ajax.Orbited
+ * @class      Liquid.Ajax.Cometd
  * @author     Michael Mayer
  * @copyright  Copyright (c) 2010-2011 Michael Mayer (http://www.liquidbytes.net/)
  * @license    http://www.opensource.org/licenses/mit-license.php MIT License
  * @license    http://www.opensource.org/licenses/gpl-2.0.php GPL v2
  */
  
-steal('orbited','orbited/stomp','liquid/ajax').then(function () {
+steal('cometd/jquery','liquid/ajax').then(function () {
 
-Liquid.Ajax.extend('Liquid.Ajax.Orbited',
+Liquid.Ajax.extend('Liquid.Ajax.Cometd',
 /* @Prototype */
 {
-    stomp: null,
-    orbitedConnected: false,
+    cometdConnected: false,
     subscriptions: {},
+
     settings: {
-        orbited_hostname: document.domain,
-        orbited_port: 8000,
-        stomp_hostname: 'localhost',
-        stomp_port: 61613
+        cometdUrl: 'http://' + document.domain + ':8080/cometd'
     },
     
     // Constructor
     
     init: function (options, events) {
-        TCPSocket = Orbited.TCPSocket;
-        
         document.domain = document.domain;
         
         $.extend(this.settings, options);
         
-        Orbited.settings.hostname   = this.settings.orbited_hostname;
-        Orbited.settings.port       = this.settings.orbited_port;
+        $.cometd.websocketEnabled = true;
 
-        this.stomp = new STOMPClient();
-        
-        this.stomp.onopen = this.callback('onOpen');
-        
-        this.stomp.onclose = this.callback('onClose');
-        
-        this.stomp.onerror = this.callback('onError');
-        
-        this.stomp.onerrorframe = this.callback('onErrorFrame');
-        
-        this.stomp.onconnectedframe = this.callback('onReady');
-        
-        this.stomp.onmessageframe = this.callback('onMessage');                
+        $.cometd.addListener('/meta/handshake', this.callback('onReady'));        
+
+        $.cometd.configure({
+            url: this.settings.cometdUrl,
+            logLevel: 'debug' // warn, info, debug
+        });
         
         this.connect();
         
@@ -58,7 +45,8 @@ Liquid.Ajax.extend('Liquid.Ajax.Orbited',
     },
     
     connect: function () {
-        this.stomp.connect(this.settings.stomp_hostname, this.settings.stomp_port);
+        $.cometd.handshake();
+        
         this.triggerEvent('connect', arguments);        
     },
     
@@ -69,7 +57,7 @@ Liquid.Ajax.extend('Liquid.Ajax.Orbited',
                 
         this.onDisconnect()
         
-        return this.stomp.disconnect();
+        return $.cometd.disconnect();
     },
     
     reconnect: function () {
@@ -83,7 +71,7 @@ Liquid.Ajax.extend('Liquid.Ajax.Orbited',
     },  
     
     afterInitSuccess: function () {
-        if(this.orbitedConnected) {
+        if(this.cometdConnected) {
             this.connected = true;
         }
         
@@ -97,12 +85,16 @@ Liquid.Ajax.extend('Liquid.Ajax.Orbited',
         } catch (e) {
         }
         
-        if(this.orbitedConnected) {
+        if(this.cometdConnected) {
             this.onConnected();
         }
     },
     
     // Public methods
+    
+    convertChannelName: function (channel) {
+        return '/' + channel.replace('.', '/');
+    },
     
     send: function (channel, message) {
         if(this.isDisconnected()) {
@@ -111,7 +103,7 @@ Liquid.Ajax.extend('Liquid.Ajax.Orbited',
         
         this.triggerEvent('send', arguments);
         
-        return this.stomp.send(message, channel);
+        return $.cometd.publish(this.convertChannelName(channel), message);
     },
     
     subscribe: function (channel) {
@@ -121,7 +113,7 @@ Liquid.Ajax.extend('Liquid.Ajax.Orbited',
         
         if(this.isConnected()) {
             try {
-                this.stomp.subscribe(channel);
+                $.cometd.subscribe(this.convertChannelName(channel), this.callback('onMessage'));
                 this.subscriptions[channel] = true;
             } catch(e) {
                 this.subscriptions[channel] = false;
@@ -136,7 +128,7 @@ Liquid.Ajax.extend('Liquid.Ajax.Orbited',
     unsubscribe: function (channel) {
         if(this.subscriptions[channel] == true && this.isConnected()) {
            this._super.apply(this, arguments);
-           this.stomp.unsubscribe(channel);
+           $.cometd.unsubscribe(this.convertChannelName(channel));
            delete(this.subscriptions.channel);
         }
     },    
@@ -186,8 +178,9 @@ Liquid.Ajax.extend('Liquid.Ajax.Orbited',
     },
     
     onReady: function (p) {
+        // console.log('onReady', arguments);
         this.connected = true;    
-        this.orbitedConnected = true;       
+        this.cometdConnected = true;       
 
         for(var channel in this.subscriptions) {
             if(this.subscriptions[channel] === false) {
@@ -201,6 +194,7 @@ Liquid.Ajax.extend('Liquid.Ajax.Orbited',
     },
 
     onMessage: function (m) {
+        // console.log('onMessage', arguments);
         if(m.headers.destination == this.secret || m.headers.destination == this.connectionHash) {
             this.publishRpcResponse(jQuery.evalJSON(m.body));
         } else {
