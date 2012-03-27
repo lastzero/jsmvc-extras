@@ -953,7 +953,7 @@ $.Class.extend('Liquid.Form',
         }
     
         for(var key in this.Class._definition) {
-            errors = this._validateField(key);
+            var errors = this._validateField(key);
 
             if(errors && errors.length && errors.length > 0) {
                 this._errors.push({
