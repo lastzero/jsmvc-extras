@@ -371,6 +371,17 @@ $.Class.extend('Liquid.Ajax',
         return [result, 'success', xhr]
     },
 
+    serializeParams: function (params) {
+        if (typeof params === 'object') {
+            for (var i in params) {
+                if (params[i] instanceof $.Model && 'serialize' in params[i]) {
+                    params[i] = params[i].serialize();
+                }
+            }
+        }
+        return params;
+    },
+    
     rpc: function(request) { // Sends a JSON-RPC (Remote procedure call) request to the server
         if(this.isDisconnected()) {
             if(this.useQueue) {
@@ -396,7 +407,7 @@ $.Class.extend('Liquid.Ajax',
                 data.push({
                     service: request[i].service,
                     method: request[i].method,
-                    params: request[i].params,
+                    params: this.serializeParams(request[i].params),
                     id: this.getAjaxCallbackId(request[i], deferred)
                 });
             }
@@ -405,7 +416,7 @@ $.Class.extend('Liquid.Ajax',
         } else {
             data = {
                 method: request['method'],
-                params: request['params'],
+                params: this.serializeParams(request['params']),
                 id: this.getAjaxCallbackId(request, deferred)
             }
 
